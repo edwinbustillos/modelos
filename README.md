@@ -44,16 +44,56 @@ sudo apt install git-lfs
    git lfs pull
    ```
 
-## 📁 Conteúdo
+## 📁 Estrutura do Projeto
 
-- `llama3-small-Q3_K_S.gguf` - Modelo Llama 3 Small quantizado (Q3_K_S) - 104.33 MB
+```
+modelos/
+├── 📄 README.md                    # Este arquivo
+├── 🤖 llama3-small-Q3_K_S.gguf   # Modelo Llama 3 Small (104.33 MB)
+├── 🐳 Dockerfile                   # Configuração Docker
+├── 🐙 docker-compose.yml          # Orquestração de serviços
+├── 🚀 run.sh                      # Script para iniciar tudo
+├── 🛑 stop.sh                     # Script para parar serviços
+├── 📁 scripts/                    # Scripts de automação
+│   ├── start-ollama.sh           # Inicia Ollama e importa modelos
+│   └── import-models.sh          # Importa arquivos GGUF
+└── 📁 models/                     # Diretório para modelos (volume Docker)
+```
 
 ## 🔧 Uso
+
+### Opção 1: Docker (Recomendado)
+
+A maneira mais fácil de usar os modelos é com Docker + Ollama + Interface Web:
+
+```bash
+# Clone o repositório
+git clone https://github.com/edwinbustillos/modelos.git
+cd modelos
+
+# Execute o setup automático
+./run.sh
+```
+
+Isso irá:
+- 🐳 Construir e iniciar containers Docker
+- 🤖 Configurar Ollama com os modelos GGUF  
+- 🌐 Disponibilizar interface web em http://localhost:3000
+- 📡 API Ollama em http://localhost:11434
+
+**Comandos úteis:**
+```bash
+./run.sh        # Iniciar tudo
+./stop.sh       # Parar serviços
+docker-compose logs -f  # Ver logs
+```
+
+### Opção 2: Uso Direto
 
 Os arquivos `.gguf` são modelos quantizados que podem ser usados com:
 - **llama.cpp**
 - **Ollama**
-- **LM Studio**
+- **LM Studio** 
 - **GPT4All**
 - Outras ferramentas compatíveis com o formato GGUF
 
