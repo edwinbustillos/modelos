@@ -206,14 +206,19 @@ setup_environment() {
         mkdir -p models
     fi
     
-    # Copy GGUF files to models directory
-    if ls *.gguf 1> /dev/null 2>&1; then
+    # Copy GGUF files to models directory or check if they already exist there
+    local gguf_in_root=$(ls *.gguf 2>/dev/null | wc -l)
+    local gguf_in_models=$(ls models/*.gguf 2>/dev/null | wc -l)
+    
+    if [ "$gguf_in_root" -gt 0 ]; then
         print_step "📦 Copiando arquivos .gguf para models/"
         cp *.gguf models/
         print_success "✅ Modelos copiados para models/"
+    elif [ "$gguf_in_models" -gt 0 ]; then
+        print_success "✅ Encontrados $gguf_in_models modelo(s) .gguf em models/"
     else
-        print_warning "⚠️  Nenhum arquivo .gguf encontrado no diretório atual"
-        print_step "📋 Você pode adicionar arquivos .gguf na pasta models/ manualmente"
+        print_warning "⚠️  Nenhum arquivo .gguf encontrado"
+        print_step "📋 Adicione arquivos .gguf na pasta models/ para usar com Ollama"
     fi
     
     # Make this script executable (in case it's not)

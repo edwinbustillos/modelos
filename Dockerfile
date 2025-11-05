@@ -17,12 +17,8 @@ WORKDIR /app
 COPY ollama.sh /app/
 RUN chmod +x /app/ollama.sh
 
-# Set up Ollama user and permissions
-RUN chown -R ollama:ollama /app
-USER ollama
-
 # Expose Ollama port
 EXPOSE 11434
 
-# Start Ollama server using unified script
-CMD ["/app/ollama.sh", "container-start"]
+# Start Ollama server
+CMD ["ollama", "serve"]

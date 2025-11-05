@@ -1,15 +1,12 @@
-version: '3.8'
-
 services:
   ollama:
-    build: .
+    image: ollama/ollama:latest
     container_name: ollama-server
     ports:
       - "11434:11434"
     volumes:
       - ollama_data:/root/.ollama
       - ./models:/app/models
-      - ./ollama.sh:/app/ollama.sh:ro
     environment:
       - OLLAMA_MODELS=/root/.ollama/models
     restart: unless-stopped
