@@ -52,11 +52,7 @@ modelos/
 ├── 🤖 llama3-small-Q3_K_S.gguf   # Modelo Llama 3 Small (104.33 MB)
 ├── 🐳 Dockerfile                   # Configuração Docker
 ├── 🐙 docker-compose.yml          # Orquestração de serviços
-├── 🚀 run.sh                      # Script para iniciar tudo
-├── 🛑 stop.sh                     # Script para parar serviços
-├── 📁 scripts/                    # Scripts de automação
-│   ├── start-ollama.sh           # Inicia Ollama e importa modelos
-│   └── import-models.sh          # Importa arquivos GGUF
+├── 🚀 ollama.sh                   # Script unificado (tudo em um!)
 └── 📁 models/                     # Diretório para modelos (volume Docker)
 ```
 
@@ -72,7 +68,7 @@ git clone https://github.com/edwinbustillos/modelos.git
 cd modelos
 
 # Execute o setup automático
-./run.sh
+./ollama.sh start
 ```
 
 Isso irá:
@@ -81,11 +77,14 @@ Isso irá:
 - 🌐 Disponibilizar interface web em http://localhost:3000
 - 📡 API Ollama em http://localhost:11434
 
-**Comandos úteis:**
+**Comandos disponíveis:**
 ```bash
-./run.sh        # Iniciar tudo
-./stop.sh       # Parar serviços
-docker-compose logs -f  # Ver logs
+./ollama.sh start       # Iniciar todos os serviços
+./ollama.sh stop        # Parar todos os serviços
+./ollama.sh restart     # Reiniciar serviços
+./ollama.sh status      # Verificar status
+./ollama.sh logs        # Ver logs em tempo real
+./ollama.sh help        # Exibir ajuda completa
 ```
 
 ### Opção 2: Uso Direto
