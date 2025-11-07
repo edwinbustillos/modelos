@@ -1,0 +1,28 @@
+#!/bin/bash
+
+# AI CLI Wrapper Script
+# This script makes it easier to use the AI CLI from anywhere
+
+# Get the directory where this script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Python executable path
+PYTHON_EXEC="$SCRIPT_DIR/.venv/bin/python"
+
+# AI CLI script path
+AI_CLI_SCRIPT="$SCRIPT_DIR/ai-cli.py"
+
+# Check if virtual environment exists
+if [ ! -f "$PYTHON_EXEC" ]; then
+    echo "❌ Virtual environment not found. Please run ./install-ai-cli.sh first."
+    exit 1
+fi
+
+# Check if AI CLI script exists
+if [ ! -f "$AI_CLI_SCRIPT" ]; then
+    echo "❌ AI CLI script not found at $AI_CLI_SCRIPT"
+    exit 1
+fi
+
+# Execute the AI CLI with all arguments
+exec "$PYTHON_EXEC" "$AI_CLI_SCRIPT" "$@"

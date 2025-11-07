@@ -58,7 +58,38 @@ modelos/
 
 ## 🔧 Uso
 
-### Opção 1: Docker (Recomendado)
+### Opção 1: AI CLI (Novo! ⭐)
+
+A maneira mais moderna de interagir com seus modelos locais - um CLI similar ao Claude Code:
+
+```bash
+# Instalação rápida
+./install-ai-cli.sh
+
+# Uso básico
+./ai-cli chat "Hello, how are you?"
+./ai-cli code "Create a Python sorting function"  
+./ai-cli explain "What is machine learning?"
+./ai-cli translate "Hello world" --to portuguese
+./ai-cli review mycode.py
+
+# Chat interativo
+./ai-cli chat --interactive
+
+# Com modelo específico
+./ai-cli --model llama3.2 chat "Explain quantum physics"
+```
+
+**✨ Funcionalidades do AI CLI:**
+- 💬 **Chat interativo** e por comando
+- 🖥️ **Geração de código** com exemplos
+- 📚 **Explicações detalhadas** de conceitos
+- 🌐 **Tradução** para qualquer idioma
+- 📄 **Resumos** de textos e arquivos
+- 🔍 **Review automático** de código
+- 🎨 **Interface colorida** e amigável
+
+### Opção 2: Docker + WebUI
 
 A maneira mais fácil de usar os modelos é com Docker + Ollama + Interface Web:
 
@@ -77,17 +108,17 @@ Isso irá:
 - 🌐 Disponibilizar interface web em http://localhost:3000
 - 📡 API Ollama em http://localhost:11434
 
-**Comandos disponíveis:**
+**Comandos úteis:**
 ```bash
-./ollama.sh start       # Iniciar todos os serviços
-./ollama.sh stop        # Parar todos os serviços
-./ollama.sh restart     # Reiniciar serviços
-./ollama.sh status      # Verificar status
-./ollama.sh logs        # Ver logs em tempo real
-./ollama.sh help        # Exibir ajuda completa
+./ollama.sh start    # Iniciar tudo
+./ollama.sh stop     # Parar serviços
+./ollama.sh restart  # Reiniciar serviços
+./ollama.sh import   # Importar modelos GGUF
+./ollama.sh status   # Verificar status
+./ollama.sh help     # Ajuda completa
 ```
 
-### Opção 2: Uso Direto
+### Opção 3: Uso Direto
 
 Os arquivos `.gguf` são modelos quantizados que podem ser usados com:
 - **llama.cpp**
