@@ -75,6 +75,88 @@ docker_compose() {
 }
 
 # =============================================================================
+# 🔄 Model Import Functions  
+# =============================================================================
+
+import_local_models() {
+    print_step "🔄 Importando modelos GGUF locais..."
+    
+    if [ ! -d "models" ]; then
+        print_error "❌ Diretório models/ não encontrado"
+        return 1
+    fi
+    
+    local gguf_files=(models/*.gguf)
+    if [ ! -f "${gguf_files[0]}" ]; then
+        print_warning "⚠️  Nenhum arquivo .gguf encontrado em models/"
+        return 0
+    fi
+    
+    print_step "📋 Aguardando Ollama ficar disponível..."
+    local max_attempts=30
+    local attempt=0
+    
+    while ! curl -s http://localhost:11434/api/tags > /dev/null 2>&1; do
+        if [ $attempt -ge $max_attempts ]; then
+            print_error "❌ Timeout: Ollama não está disponível"
+            return 1
+        fi
+        print_step "⏳ Tentativa $((attempt + 1))/$max_attempts..."
+        sleep 2
+        ((attempt++))
+    done
+    
+    print_success "✅ Ollama está disponível!"
+    
+    local imported_count=0
+    
+    for gguf_file in "${gguf_files[@]}"; do
+        if [ -f "$gguf_file" ]; then
+            local filename=$(basename "$gguf_file" .gguf)
+            local model_name=$(echo "$filename" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9.-]/-/g')
+            
+            print_step "📥 Importando: $filename -> $model_name"
+            
+            # Create Modelfile inside container
+            if docker exec ollama-server sh -c "cat > /tmp/Modelfile-$model_name << 'EOF'
+FROM /app/models/$(basename "$gguf_file")
+
+TEMPLATE \"\"\"{{ if .System }}System: {{ .System }}
+
+{{ end }}{{ if .Prompt }}User: {{ .Prompt }}
+
+{{ end }}Assistant: {{ .Response }}\"\"\"
+
+PARAMETER stop \"User:\"
+PARAMETER stop \"Assistant:\"
+PARAMETER stop \"System:\"
+EOF"; then
+                # Import model
+                if docker exec ollama-server ollama create "$model_name" -f "/tmp/Modelfile-$model_name"; then
+                    print_success "✅ Modelo $model_name importado com sucesso!"
+                    ((imported_count++))
+                else
+                    print_error "❌ Erro ao importar modelo $model_name"
+                fi
+                
+                # Clean up
+                docker exec ollama-server rm -f "/tmp/Modelfile-$model_name"
+            else
+                print_error "❌ Erro ao criar Modelfile para $model_name"
+            fi
+        fi
+    done
+    
+    if [ $imported_count -gt 0 ]; then
+        print_success "🎉 $imported_count modelo(s) importado(s) com sucesso!"
+        print_step "📋 Modelos disponíveis:"
+        docker exec ollama-server ollama list
+    else
+        print_warning "⚠️  Nenhum modelo foi importado"
+    fi
+}
+
+# =============================================================================
 # 📦 Model Import Functions (for container use)
 # =============================================================================
 
@@ -264,6 +346,13 @@ start_services() {
         fi
         
         echo ""
+        
+        # Auto-import GGUF models if they exist
+        if [ -d "models" ] && ls models/*.gguf 1> /dev/null 2>&1; then
+            print_step "📦 Importando automaticamente modelos GGUF..."
+            import_local_models
+        fi
+        
         print_success "🎉 Setup concluído! Acesse http://localhost:3000 para usar a interface web."
     else
         print_error "❌ Erro ao iniciar containers"
@@ -370,6 +459,7 @@ show_help() {
     echo "   restart       🔄 Reiniciar todos os serviços"
     echo "   status        📊 Verificar status dos serviços"
     echo "   logs          📋 Exibir logs em tempo real"
+    echo "   import        📦 Importar modelos GGUF da pasta models/"
     echo "   help          ❓ Exibir esta ajuda"
     echo ""
     echo "🌐 URLs dos serviços:"
@@ -407,6 +497,10 @@ main() {
             ;;
         "logs"|"log")
             show_logs
+            ;;
+        "import")
+            # Importar modelos GGUF locais
+            import_local_models
             ;;
         "help"|"--help"|"-h")
             show_help
