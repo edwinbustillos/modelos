@@ -157,6 +157,134 @@ EOF"; then
 }
 
 # =============================================================================
+# 🗑️ Model Management Functions
+# =============================================================================
+
+list_models() {
+    print_step "📋 Listando modelos disponíveis..."
+    
+    # Check if Ollama is running
+    if ! curl -s http://localhost:11434/api/tags > /dev/null 2>&1; then
+        print_error "❌ Ollama não está rodando. Execute './ollama.sh start' primeiro."
+        return 1
+    fi
+    
+    print_step "🤖 Modelos no Ollama:"
+    docker exec ollama-server ollama list
+    
+    echo ""
+    print_step "📁 Arquivos GGUF em models/:"
+    if [ -d "models" ] && ls models/*.gguf 1> /dev/null 2>&1; then
+        ls -lh models/*.gguf | awk '{print "   " $9 " (" $5 ")"}'
+    else
+        print_warning "   ⚠️  Nenhum arquivo .gguf encontrado"
+    fi
+}
+
+delete_model() {
+    local model_name="$1"
+    
+    if [ -z "$model_name" ]; then
+        print_error "❌ Nome do modelo é obrigatório"
+        echo ""
+        echo "💡 Uso: $0 delete <nome-do-modelo>"
+        echo ""
+        print_step "📋 Modelos disponíveis:"
+        docker exec ollama-server ollama list 2>/dev/null || print_error "Ollama não está rodando"
+        return 1
+    fi
+    
+    # Check if Ollama is running
+    if ! curl -s http://localhost:11434/api/tags > /dev/null 2>&1; then
+        print_error "❌ Ollama não está rodando. Execute './ollama.sh start' primeiro."
+        return 1
+    fi
+    
+    print_step "🗑️ Deletando modelo: $model_name"
+    
+    # Check if model exists
+    if ! docker exec ollama-server ollama list | grep -q "$model_name"; then
+        print_error "❌ Modelo '$model_name' não encontrado"
+        print_step "📋 Modelos disponíveis:"
+        docker exec ollama-server ollama list
+        return 1
+    fi
+    
+    # Confirm deletion
+    echo ""
+    read -p "⚠️  Tem certeza que deseja deletar o modelo '$model_name'? (y/N): " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        print_warning "❌ Operação cancelada"
+        return 0
+    fi
+    
+    # Delete model
+    if docker exec ollama-server ollama rm "$model_name"; then
+        print_success "✅ Modelo '$model_name' deletado com sucesso!"
+    else
+        print_error "❌ Erro ao deletar modelo '$model_name'"
+        return 1
+    fi
+}
+
+delete_all_models() {
+    print_step "🗑️ Deletando todos os modelos..."
+    
+    # Check if Ollama is running
+    if ! curl -s http://localhost:11434/api/tags > /dev/null 2>&1; then
+        print_error "❌ Ollama não está rodando. Execute './ollama.sh start' primeiro."
+        return 1
+    fi
+    
+    # Get list of models
+    local models=$(docker exec ollama-server ollama list | tail -n +2 | awk '{print $1}' | grep -v '^$')
+    
+    if [ -z "$models" ]; then
+        print_warning "ℹ️  Nenhum modelo encontrado para deletar"
+        return 0
+    fi
+    
+    echo "📋 Modelos que serão deletados:"
+    echo "$models" | sed 's/^/   • /'
+    echo ""
+    
+    # Confirm deletion
+    read -p "⚠️  Tem certeza que deseja deletar TODOS os modelos? (y/N): " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        print_warning "❌ Operação cancelada"
+        return 0
+    fi
+    
+    # Delete all models
+    local deleted_count=0
+    local failed_count=0
+    
+    while IFS= read -r model; do
+        if [ -n "$model" ]; then
+            print_step "🗑️ Deletando: $model"
+            if docker exec ollama-server ollama rm "$model" > /dev/null 2>&1; then
+                print_success "✅ $model deletado"
+                ((deleted_count++))
+            else
+                print_error "❌ Falha ao deletar $model"
+                ((failed_count++))
+            fi
+        fi
+    done <<< "$models"
+    
+    echo ""
+    if [ $deleted_count -gt 0 ]; then
+        print_success "🎉 $deleted_count modelo(s) deletado(s) com sucesso!"
+    fi
+    
+    if [ $failed_count -gt 0 ]; then
+        print_warning "⚠️  $failed_count modelo(s) falharam ao deletar"
+    fi
+}
+
+# =============================================================================
 # 📦 Model Import Functions (for container use)
 # =============================================================================
 
@@ -454,12 +582,21 @@ show_help() {
     echo "💡 Uso: $0 [comando]"
     echo ""
     echo "📋 Comandos disponíveis:"
+    echo ""
+    echo "🚀 Serviços:"
     echo "   start         🚀 Iniciar todos os serviços"
     echo "   stop          🛑 Parar todos os serviços"
     echo "   restart       🔄 Reiniciar todos os serviços"
     echo "   status        📊 Verificar status dos serviços"
     echo "   logs          📋 Exibir logs em tempo real"
+    echo ""
+    echo "🤖 Modelos:"
     echo "   import        📦 Importar modelos GGUF da pasta models/"
+    echo "   list          📋 Listar todos os modelos disponíveis"
+    echo "   delete <nome> 🗑️ Deletar modelo específico"
+    echo "   delete-all    🗑️ Deletar todos os modelos"
+    echo ""
+    echo "❓ Ajuda:"
     echo "   help          ❓ Exibir esta ajuda"
     echo ""
     echo "🌐 URLs dos serviços:"
@@ -501,6 +638,18 @@ main() {
         "import")
             # Importar modelos GGUF locais
             import_local_models
+            ;;
+        "list"|"models")
+            # Listar modelos disponíveis
+            list_models
+            ;;
+        "delete"|"remove"|"rm")
+            # Deletar modelo específico
+            delete_model "$2"
+            ;;
+        "delete-all"|"remove-all"|"clean")
+            # Deletar todos os modelos
+            delete_all_models
             ;;
         "help"|"--help"|"-h")
             show_help
